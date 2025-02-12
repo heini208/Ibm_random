@@ -10,7 +10,7 @@ circuit = QuantumCircuit(1, 1)
 circuit.h(0)
 circuit.measure(0, 0)
 
-service = QiskitRuntimeService(channel='ibm_quantum', token='ce3c1b28ec49acf152315e47ab8bbe0745e6a12f5fccc00a766a2fb193b745a7b5518cdc3f38e2a92c7a716b43f330472b02c38ae2998dfc2ce0a5f7bcaf94e2')
+service = QiskitRuntimeService(channel='ibm_quantum', token='YOUR TOKEN')
 backend = service.least_busy(operational=True, simulator=False)
 circuit = transpile(circuit, backend)
 
