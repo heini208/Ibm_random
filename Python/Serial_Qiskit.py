@@ -1,15 +1,13 @@
-import serial
 import json
 import time
 import glob
-from qiskit import QuantumCircuit, Aer, execute
-from qiskit_ibm_runtime import QiskitRuntimeService
+from qiskit import QuantumCircuit
+from qiskit_ibm_runtime import QiskitRuntimeService, Sampler
+from qiskit_aer import Aer
 from serial import Serial
 
 
 def find_arduino_port() -> str:
-    #TODO FOR TESTING REMOVE
-    return("COM3")
     ports = glob.glob('/dev/ttyUSB*') + glob.glob('/dev/ttyACM*')
     if not ports:
         print("No Arduino found.")
@@ -30,7 +28,8 @@ def generate_superposition_qubits_simulated(num_qubits: int) -> list[int]:
     circuit.measure(range(num_qubits), range(num_qubits))
 
     simulator = Aer.get_backend('qasm_simulator')
-    job = execute(circuit, simulator, shots=1)
+    #sampler = Sampler(simulator)
+    job = simulator.run([circuit])
     result = job.result()
     counts = result.get_counts()
 
