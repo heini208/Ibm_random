@@ -28,13 +28,38 @@ def generate_superposition_qubits_simulated(num_qubits: int) -> list[int]:
     circuit.measure(range(num_qubits), range(num_qubits))
 
     simulator = Aer.get_backend('qasm_simulator')
-    #sampler = Sampler(simulator)
     job = simulator.run([circuit])
     result = job.result()
     counts = result.get_counts()
 
     return list(map(int, list(counts.keys())[0]))
 
+def start_real_ibm_job(num_qubits: int) -> bytes:
+    """Starts a job on a real IBM Quantum computer and returns the job ID."""
+    service = QiskitRuntimeService()
+    backend = service.least_busy(operational=True, simulator=False)
+
+    circuit = QuantumCircuit(num_qubits, num_qubits)
+    circuit.h(range(num_qubits))
+    circuit.measure(range(num_qubits), range(num_qubits))
+
+    job = service.run(backend=backend, circuits=[circuit])
+    return json.dumps({"job_id": job.job_id()}).encode('utf-8')
+
+def get_job_status(job_id: str) -> str:
+    """Retrieve the status of a quantum job using IBM Qiskit Runtime."""
+    service = QiskitRuntimeService()
+    job = service.job(job_id)
+    return job.status().value
+
+def get_job_result(job_id: str) -> list[int]:
+    """Retrieve the result of a quantum job using IBM Qiskit Runtime."""
+    service = QiskitRuntimeService()
+    job = service.job(job_id)
+    result = job.result()
+    counts = result.get_counts()
+
+    return list(map(int, list(counts.keys())[0]))
 
 def start_serial_connection(baudrate: int = 9600) -> None | Serial | Serial:
     port = find_arduino_port()
@@ -55,6 +80,12 @@ def execute_command(data: str) -> bytes | None:
         return start_job_command(command.get("num_qubits", 1))
     elif command["action"] == "configure_ibm":
         return configure_ibm_token(command["token"])
+    elif command["action"] == "get_job_status":
+        status = get_job_status(command["job_id"])
+        return json.dumps({"job_status": status}).encode('utf-8')
+    elif command["action"] == "get_job_result":
+        result = get_job_result(command["job_id"])
+        return json.dumps({"job_result": result}).encode('utf-8')
 
 
 def start_job_command(num_qubits: int) -> bytes:
