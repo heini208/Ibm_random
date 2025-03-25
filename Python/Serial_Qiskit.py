@@ -75,6 +75,7 @@ def start_serial_connection(baudrate: int = 9600) -> None | Serial | Serial:
 
 
 def execute_command(data: str) -> bytes | None:
+    print("Command:", data);
     command = json.loads(data)
     if command["action"] == "start_job":
         return start_job_command(command.get("num_qubits", 1))

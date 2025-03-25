@@ -108,5 +108,17 @@ std::list<double> getJobResult(String jobId, int numQubits) {
     return convertResponseToDouble(response, numQubits);
 }
 
+bool configureIBMToken(String token) {
+    String jsonString = "{\"action\": \"configure_ibm\", \"token\": \"" + token + "\"}";
+    Serial.println(jsonString);
+
+    if (!waitResponse()) {
+        return false;  // Indicate failure
+    }
+
+    String response = Serial.readStringUntil('\n');
+    return response.indexOf("\"status\": \"IBM token configured\"") != -1;
+}
+
 
 #endif // ARDUINO_QISKIT_H
