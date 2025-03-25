@@ -17,7 +17,7 @@ def find_arduino_port() -> str:
 
 
 def configure_ibm_token(token: str) -> bytes:
-    QiskitRuntimeService.save_account(token, overwrite=True)
+    QiskitRuntimeService.save_account(token = token, channel= 'ibm_quantum', overwrite=True)
     print("IBM Quantum token configured.")
     return json.dumps({"status": "IBM token configured"}).encode('utf-8')
 
@@ -50,7 +50,7 @@ def get_job_status(job_id: str) -> str:
     """Retrieve the status of a quantum job using IBM Qiskit Runtime."""
     service = QiskitRuntimeService()
     job = service.job(job_id)
-    return job.status().value
+    return job.status()
 
 def get_job_result(job_id: str) -> list[int]:
     """Retrieve the result of a quantum job using IBM Qiskit Runtime."""
@@ -104,9 +104,9 @@ def send_response(arduino: Serial, data: bytes) -> None:
 def process_serial_commands(arduino: Serial) -> None:
     while True:
         if arduino.in_waiting > 0:
-            data = arduino.readline().decode('utf-8').strip()
-
             try:
+                data = arduino.readline().decode('utf-8').strip()
+
                 response = execute_command(data)
                 if response:
                     send_response(arduino, response)
