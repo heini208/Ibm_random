@@ -1,7 +1,7 @@
 import json
 import time
 import glob
-from qiskit import QuantumCircuit
+from qiskit import QuantumCircuit, transpile
 from qiskit_ibm_runtime import QiskitRuntimeService, Sampler
 from qiskit_aer import Aer
 from serial import Serial
@@ -38,13 +38,19 @@ def start_real_ibm_job(num_qubits: int) -> bytes:
     """Starts a job on a real IBM Quantum computer and returns the job ID."""
     service = QiskitRuntimeService()
     backend = service.least_busy(operational=True, simulator=False)
+    print("Using backend:", backend.name, "with gates:", backend.configuration().basis_gates)
 
     circuit = QuantumCircuit(num_qubits, num_qubits)
     circuit.h(range(num_qubits))
     circuit.measure(range(num_qubits), range(num_qubits))
 
-    job = service.run(backend=backend, circuits=[circuit])
+    # Transpile to match the backend's basis gates
+    circuit = transpile(circuit, backend)
+
+    sampler = Sampler(backend)
+    job = sampler.run([circuit])
     return json.dumps({"job_id": job.job_id()}).encode('utf-8')
+
 
 def get_job_status(job_id: str) -> str:
     """Retrieve the status of a quantum job using IBM Qiskit Runtime."""
@@ -79,6 +85,8 @@ def execute_command(data: str) -> bytes | None:
     command = json.loads(data)
     if command["action"] == "start_job":
         return start_job_command(command.get("num_qubits", 1))
+    elif command["action"] == "start_real_ibm_job":
+        return start_real_ibm_job(command.get("num_qubits", 1))
     elif command["action"] == "configure_ibm":
         return configure_ibm_token(command["token"])
     elif command["action"] == "get_job_status":
@@ -98,7 +106,7 @@ def start_job_command(num_qubits: int) -> bytes:
 def send_response(arduino: Serial, data: bytes) -> None:
     print("Response: ", data)
     arduino.reset_input_buffer()
-    arduino.write(data)
+    arduino.write(data + b'\n')
 
 
 def process_serial_commands(arduino: Serial) -> None:
