@@ -20,28 +20,24 @@ bool waitResponse() {
 }
 
 // Converts the response from the backend into an int array representing qubit measurement
-std::list<double> convertResponseToDouble(String response, int numQubits) {
+std::list<double> convertResponseToDouble(String response) {
     int startIdx = response.indexOf("[");
     int endIdx = response.indexOf("]");
-
+    std::list<double> result;
     if (startIdx == -1 || endIdx == -1 || endIdx <= startIdx) {
         Serial.println("Error: Invalid JSON format.");
-        return std::list<double>();  // Return an empty list
+        return result;
     }
-
-    // Extract the array content and split it into doubles
     String resultStr = response.substring(startIdx + 1, endIdx);
-    std::list<double> result;
-
-    for (size_t i = 0; i < resultStr.length(); i++) { // Change to size_t
+    for (size_t i = 0; i < resultStr.length(); i++) {
         char c = resultStr[i];
         if (c == '0' || c == '1') {
-            result.push_back(c - '0');  // Convert char to double and add to the list
-            if (result.size() >= numQubits) break;
+            result.push_back(c - '0');
         }
     }
     return result;
 }
+
 
 // Requests qubit measurement and returns the measured qubit states as an array
 std::list<double> requestQubitMeasurement(int numQubits) {
@@ -53,7 +49,7 @@ std::list<double> requestQubitMeasurement(int numQubits) {
     }
 
     String response = Serial.readStringUntil('\n');
-    return convertResponseToDouble(response, numQubits); // Pass numQubits to convert the response
+    return convertResponseToDouble(response);
 }
 
 String startRealIBMJob(int numQubits) {
@@ -96,16 +92,15 @@ String getJobStatus(String jobId) {
     return response.substring(startIdx, endIdx);  // Extract job status
 }
 
-std::list<double> getJobResult(String jobId, int numQubits) {
+std::list<double> getJobResult(String jobId) {
     String jsonString = "{\"action\": \"get_job_result\", \"job_id\": \"" + jobId + "\"}";
     Serial.println(jsonString);
 
     if (!waitResponse()) {
-        return std::list<double>();  // Return empty if no response
+        return std::list<double>();
     }
-
     String response = Serial.readStringUntil('\n');
-    return convertResponseToDouble(response, numQubits);
+    return convertResponseToDouble(response); // No numQubits
 }
 
 bool configureIBMToken(String token) {
